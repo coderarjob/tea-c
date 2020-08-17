@@ -20,15 +20,29 @@
 #include <string.h> // For strcmp
 #include "tea.h"
 
-void poc();
+#define USAGE(p) fprintf(stderr, \
+		"Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
+		"Performs Encryption/Decruption of multiple flies.\n" \
+		"usage:\n%s [-e|-d] -k '16 byte key' <...>\n" \
+		"-e    - Encrypt\n" \
+		"        Encrypts the input files and the output files of each" \
+		" will be placed in the same directory with extension .3\n" \
+		"-d    - Decrypt\n" \
+		"        Decrypts the input files and the output files of each" \
+		" will be placed in the same directory excluding extension .3\n" \
+		, p)
 
 #define KEY_SIZE 16 	// bytes
 #define DATA_SIZE 8		// bytes
 
-#define USAGE(p) fprintf(stderr, \
-		"Tiny Encryption Algorithm implementation, with 128 bit key.\nUsage:\n%s [-e|-d] '16 byte key'\n-e    - Encrypt\n-d    - Decrypt\n", p)
-
 enum opmode {ENCRYPT, DECRYPT, UNSET};
+
+struct op
+{
+	int mode;
+	char *key;
+	char *files[];
+};
 
 int main(int argc, char *argv[])
 {
@@ -100,19 +114,14 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void poc()
+struct op *readargs(const char *argv[])
 {
-	int v0 = 500, 
-		v1 = 490;
-	
-	v0 += v1 ^ 5;	// V0 is calculated first
-	v1 += v0 ^ 3;	// v1 is calculated 2nd with V0
+	struct op *out;
+	if ((out = malloc(sizeof(struct op))) == NULL)
+	{
+		perror("malloc");
+		exit(3);
+	}
 
-	printf("After encryption: %d, %d\n", v0, v1);
-
-	v1 -= v0 ^ 3;	// As v1 was the last, it needs to calculated 1st here.
-	v0 -= v1 ^ 5;	// v0 is calculated with v1
-
-	printf("After decryption: %d, %d\n", v0, v1);
+	return out;
 }
-
