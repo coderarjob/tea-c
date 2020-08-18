@@ -23,52 +23,50 @@
 #define USAGE(p) fprintf(stderr, \
 		"Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
 		"Performs Encryption/Decruption of multiple flies.\n" \
-		"usage:\n%s [-e|-d] -k '16 byte key' <...>\n" \
+		"usage:\n%s [-e|-d] -k '16 byte key' -I <...>\n" \
 		"-e    - Encrypt\n" \
 		"        Encrypts the input files and the output files of each" \
 		" will be placed in the same directory with extension .3\n" \
 		"-d    - Decrypt\n" \
 		"        Decrypts the input files and the output files of each" \
 		" will be placed in the same directory excluding extension .3\n" \
+		"-k    - 16 byte key.\n" \
+		"-I    - Files that need to be processed.\n" \
 		, p)
+
 
 #define KEY_SIZE 16 	// bytes
 #define DATA_SIZE 8		// bytes
+#define MAX_INPUT_FILES 50 // number of files
+#define MAX_FILENAME_LENGTH 255 // Length of file path
 
-enum opmode {ENCRYPT, DECRYPT, UNSET};
+enum opmode {UNSET,ENCRYPT, DECRYPT};
 
 struct op
 {
 	int mode;
-	char *key;
-	char *files[];
+	int count;
+	char key[KEY_SIZE];
+	char *files[MAX_INPUT_FILES];
 };
 
-int main(int argc, char *argv[])
+int readargs(char *argv[], struct op *out);
+char **readfiles(char *argv[], struct op *out);
+int readKey(char *arg, struct op *out);
+
+int main(int argc,char *argv[])
 {
-	int mode = UNSET;
-	uint8_t d[DATA_SIZE];
-	uint8_t k[KEY_SIZE] = {0};
+	struct op prm = {0};
 
 	// 1. Read parameters
-	if (argc >= 3) {
-		// 1.1 Read Mode
-		if (strcmp(argv[1],"-e") == 0)
-			mode = ENCRYPT;
-		else if (strcmp(argv[1],"-d") == 0)
-			mode = DECRYPT;
-		else
-			fprintf(stderr,"Invalid option %s\n",argv[1]);
+	if (argc >= 4)
+		readargs(argv,&prm);
 
-		// 1.2 Read Key
-		if (strlen(argv[2]) != KEY_SIZE)
-			fprintf(stderr,"Invalid key. Must be %u bytes long.\n", KEY_SIZE);
-		else
-			memcpy(&k,argv[2],KEY_SIZE);	// Copy into k variable
+	printf("mode %u, key: %s, file count: %u\n",prm.mode,prm.key,prm.count);
+	for(int i = 0; i < prm.count; i++)
+		printf("File %u: %s\n",i,prm.files[i]);
 
-	}
-	
-	if (mode == UNSET || k[0] == 0)
+	if (prm.mode == UNSET || prm.key[0] == 0)
 	{
 		USAGE(argv[0]);
 		exit(1);
@@ -95,7 +93,7 @@ int main(int argc, char *argv[])
 
 		// 4. If mode == ENCRYPT, we code the read 8 bytes
 		//    else decode the 8 bytes
-		if (mode == ENCRYPT)
+		if (prm.mode == ENCRYPT)
 			code((uint32_t *) d, (uint32_t *) k);
 		else
 			decode((uint32_t *) d, (uint32_t *) k);
@@ -114,14 +112,91 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-struct op *readargs(const char *argv[])
+/*
+ * It will read the startup arguments and fill the 'op' structure.
+ *
+ * */
+int readargs(char *argv[], struct op *out)
 {
-	struct op *out;
-	if ((out = malloc(sizeof(struct op))) == NULL)
+	char *arg;
+
+	// Default options
+	out->mode = UNSET;
+	out->count = 0;
+
+	while((arg = *argv++)) {
+		if (*arg == '-') {
+			while(*++arg){
+				switch(*arg) {
+					case 'e':
+						out->mode = ENCRYPT;
+						break;
+					case 'd':
+						out->mode = DECRYPT;
+						break;
+					case 'k':
+						readKey(*argv++,out);
+						break;
+					case 'I':
+						argv = readfiles(argv,out);
+						break;
+					default:
+						fprintf(stderr,"Error: Invaid argument: %s\n",arg);
+						return 1;
+						break;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+
+int readKey(char *arg, struct op *out)
+{
+	if (strlen(arg) != KEY_SIZE){
+		fprintf(stderr,
+				"Error: Invalid key. Must be %u bytes long.\n", KEY_SIZE);
+		return 1;
+	}
+	else{
+		memcpy(out->key,arg,KEY_SIZE);	
+	}
+	return 0;
+}
+
+char **readfiles(char *argv[], struct op *out)
+{
+	int filei;
+	char *arg;
+
+	for(filei = 0 
+			; (arg = argv[filei]) && *arg != '-' && filei < MAX_INPUT_FILES 
+			; filei++)
 	{
-		perror("malloc");
-		exit(3);
+
+		// Check the length of the file name.
+		int len = strlen(arg) + 1;	// +1 for EOL
+		if (len > MAX_FILENAME_LENGTH) {
+			fprintf(stderr,"Warning: Skipping, too long: %s", arg);
+			continue;
+		}
+
+		// Create a string if required length.
+		if ((out->files[filei] = malloc(sizeof(char) * len)) == NULL) {
+			perror("malloc");
+			exit(3);
+		}
+
+		// Copy file path from argument to file->files[filei]
+		memcpy(out->files[filei],arg,len);	
 	}
 
-	return out;
+	if (arg != NULL && *arg != '-')
+		fprintf(stderr, "Warning: Too many files. Skipping after: %s\n",arg);
+
+	// Update count
+	out->count = filei;
+
+	return &argv[filei];
 }
