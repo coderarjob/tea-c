@@ -20,9 +20,8 @@ performing the operation writes the output in separate files.
 
 |Mode | Input | Output |
 |-----------|--------------|-------------|
-|**Encryption** | `any file type` | `.3` files in the same directory`|
-|**Decryption** | files of `.3` extension | files with same name but `.3` 
-extension removed |
+|**Encryption** | `any file type` | files with same name but `.3` extension added |
+|**Decryption** | files of `.3` extension | files with same name but `.3` extension removed |
 
 The algorithm is contained in `tea.c` file and `main.c` deals with testing 
 arguments and calling tea routines to entrypt/decrypt entire files.
