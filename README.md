@@ -58,6 +58,4 @@ tea -dk 'great elephant i' -I password.3
 This decrypts the file `password.3` using the key `great elephant i`, and 
 writes the output to `password` file. 
 
-## Issues:
-
 
