@@ -9,110 +9,216 @@
  *   - https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm
  *   - http://www.tayloredge.com/reference/Mathematics/TEA-XTEA.pdf
  *
- *	Author: Arjob Mukherjee (arjobmukherjee@gmail.com)
- *	Dated : 16th August 2020
+ *    Author: Arjob Mukherjee (arjobmukherjee@gmail.com)
+ *    Dated : 16th August 2020
  * ---------------------------------------------------------------------------
  * */
-#include <stdio.h>	// For printf and NULL
-#include <stdint.h>	// For standard int types
-#include <unistd.h>	// For read, write
-#include <stdlib.h> // For exit
-#include <string.h> // For strcmp
+#include <stdio.h>        // For printf and NULL, etc..
+#include <stdint.h>        // For standard int types
+#include <stdlib.h>     // For exit, malloc
+#include <string.h>     // For strcmp, strlen, etc..
 #include "tea.h"
 
-void poc();
-
-#define KEY_SIZE 16 	// bytes
-#define DATA_SIZE 8		// bytes
-
 #define USAGE(p) fprintf(stderr, \
-		"Tiny Encryption Algorithm implementation, with 128 bit key.\nUsage:\n%s [-e|-d] '16 byte key'\n-e    - Encrypt\n-d    - Decrypt\n", p)
+        "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
+        "Performs Encryption/Decruption of multiple flies.\n" \
+        "usage:\n%s [-e|-d] -k '16 byte key' -I <...>\n" \
+        "-e    - Encrypt\n" \
+        "        Encrypts the input files and the output files of each" \
+        " will be placed in the same directory with extension .3\n" \
+        "-d    - Decrypt\n" \
+        "        Decrypts the input files and the output files of each" \
+        " will be placed in the same directory excluding extension .3\n" \
+        "-k    - 16 byte key.\n" \
+        "-I    - Files that need to be processed.\n" \
+        , p)
 
-enum opmode {ENCRYPT, DECRYPT, UNSET};
+#define MAX_FILENAME_LENGTH 255 // Length of file path
+#define MAX_INPUT_FILES 50 // number of files
+#define ENCRYPTED_FILE_EXTENSION ".3"
 
-int main(int argc, char *argv[])
+enum errors { 
+                ERR_NONE, 
+                 ERR_MALLOC, 
+                 ERR_FILE_FAILED, 
+                 ERR_INVALID_ARG
+            };
+struct op
 {
-	int mode = UNSET;
-	uint8_t d[DATA_SIZE];
-	uint8_t k[KEY_SIZE] = {0};
+    int mode;
+    int count;
+    char key[KEY_SIZE];
+    char *files[MAX_INPUT_FILES];
+};
 
-	// 1. Read parameters
-	if (argc >= 3) {
-		// 1.1 Read Mode
-		if (strcmp(argv[1],"-e") == 0)
-			mode = ENCRYPT;
-		else if (strcmp(argv[1],"-d") == 0)
-			mode = DECRYPT;
-		else
-			fprintf(stderr,"Invalid option %s\n",argv[1]);
+int readargs(char *argv[], struct op *out);
+char **read_args_files(char *argv[], struct op *out);
+int read_args_key(char *arg, struct op *out);
+int strip_extension(char *filename, char *extension, char *out);
 
-		// 1.2 Read Key
-		if (strlen(argv[2]) != KEY_SIZE)
-			fprintf(stderr,"Invalid key. Must be %u bytes long.\n", KEY_SIZE);
-		else
-			memcpy(&k,argv[2],KEY_SIZE);	// Copy into k variable
+int main(int argc,char *argv[])
+{
+    struct op prm = {0};
 
-	}
-	
-	if (mode == UNSET || k[0] == 0)
-	{
-		USAGE(argv[0]);
-		exit(1);
-	}
+    // 1. Read parameters
+    if (argc >= 4)
+        readargs(argv,&prm);
 
-	// 2. Read 8 bytes from the file, until EOF is reached or some error
-	// occurs.
-	int len;
-	while ((len = read(0,d,DATA_SIZE)) > 0){
-		// 3. If read < 8, pad with zeros
-		//    Alternate: bzero(&d[len],8-len); 
-		// Note: if 'd' is delcared as 
-		//
-		// 			uint32_t d[4], 
-		//
-		// then the below code will look like 
-		//
-		//         memset(((uint8_t *)&d[0]+len),0,8 - len);	Why?
-		//
-		// Because, &d[0] is uint32_t *, so addition will increment in 4 byte
-		// increments. We want increments of 1 byte, thats why we cast it to
-		// uint8_t *. 
-		memset(&d[len],0,DATA_SIZE - len);	
+    if (prm.mode == UNSET || prm.key[0] == 0)
+    {
+        USAGE(argv[0]);
+        exit(ERR_INVALID_ARG);
+    }
 
-		// 4. If mode == ENCRYPT, we code the read 8 bytes
-		//    else decode the 8 bytes
-		if (mode == ENCRYPT)
-			code((uint32_t *) d, (uint32_t *) k);
-		else
-			decode((uint32_t *) d, (uint32_t *) k);
+    // Now we encrypt/decrypt each of the files.
+    char output_filename[MAX_FILENAME_LENGTH + 2];
 
-		// 5. Write back
-		if ((len = write(1,d,DATA_SIZE)) < 0)
-			break;
-	}
+    for(int i = 0; i < prm.count; i++) {
 
-	// In case of read or write error, we exit and display this error.
-	if (len < 0){
-		perror("read/write");
-		exit(2);
-	}
+        if (prm.mode == ENCRYPT) {
+            // Output file name: InputfilePath + ".3"
+            output_filename[0] = '\0';
+            strcat(output_filename, prm.files[i]);
+            strcat(output_filename, ENCRYPTED_FILE_EXTENSION);
 
-	return 0;
+            encrypt_decrypt (ENCRYPT, 
+                             prm.files[i], 
+                             output_filename, 
+                             prm.key);
+        }
+        else{
+            // Output file name: InputFilePath - ".3" extension
+            if (strip_extension(prm.files[i], 
+                            ENCRYPTED_FILE_EXTENSION,
+                            output_filename) == ERR_INVALID_ARG){
+                fprintf(stderr,"Warning: Invalid file extension in %s\n",
+                        prm.files[i]);
+                continue;
+            }
+            
+
+            encrypt_decrypt (DECRYPT, 
+                             prm.files[i], 
+                             output_filename, 
+                             prm.key);
+        }
+    }
+
+    return ERR_NONE;
 }
 
-void poc()
+
+/*
+ * Fills 'out' parameter with the filename with Extension removed.
+ *
+ * */
+int strip_extension(char *filename, char *extension, char *out)
 {
-	int v0 = 500, 
-		v1 = 490;
-	
-	v0 += v1 ^ 5;	// V0 is calculated first
-	v1 += v0 ^ 3;	// v1 is calculated 2nd with V0
+    int flen = strlen(filename),
+        el    = flen - strlen(extension);   // Extension begins at this index.
 
-	printf("After encryption: %d, %d\n", v0, v1);
+    *out = '\0';
+    if (strcmp (filename + el,extension))
+        return ERR_INVALID_ARG;
 
-	v1 -= v0 ^ 3;	// As v1 was the last, it needs to calculated 1st here.
-	v0 -= v1 ^ 5;	// v0 is calculated with v1
-
-	printf("After decryption: %d, %d\n", v0, v1);
+    strcpy(out, filename);
+    *(out + el) = '\0';
+    return ERR_NONE;
 }
 
+/*
+ * It will read the startup arguments and fill the 'op' structure.
+ *
+ * */
+int readargs(char *argv[], struct op *out)
+{
+    char *arg;
+
+    // Default options
+    out->mode = UNSET;
+    out->count = 0;
+
+    while((arg = *argv++)) {
+        if (*arg == '-') {
+            while(*++arg){
+                switch(*arg) {
+                    case 'e':
+                        out->mode = ENCRYPT;
+                        break;
+                    case 'd':
+                        out->mode = DECRYPT;
+                        break;
+                    case 'k':
+                        read_args_key(*argv++,out);
+                        break;
+                    case 'I':
+                        argv = read_args_files(argv,out);
+                        break;
+                    default:
+                        fprintf(stderr,"Error: Invaid argument: %s\n",arg);
+                        return ERR_INVALID_ARG;
+                        break;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int read_args_key(char *arg, struct op *out)
+{
+    if (strlen(arg) != KEY_SIZE){
+        fprintf(stderr,
+                "Error: Invalid key. Must be %u bytes long.\n", KEY_SIZE);
+        return ERR_INVALID_ARG;
+    }
+
+    memcpy(out->key,arg,KEY_SIZE);    
+    return 0;
+}
+
+char **read_args_files(char *argv[], struct op *out)
+{
+    int filei;        // Points to the string in argv being copied.
+    char *file;        // Points to the current string at argv[filei]
+
+    // It will take each of the strings in argv and copy them to out->files[].
+    // The loop stops when there are no more strings in argv array or when the
+    // current pointed string starts with a - (- marks start of parameter).
+    for(filei = 0 
+            ; (file = argv[filei]) && *file != '-' && filei < MAX_INPUT_FILES 
+            ; filei++)
+    {
+
+
+        // Check the length of the file name.
+        // Check if filename + EOL < MAX_FILENAME_LENGTH
+
+        int len = strlen(file) + 1;
+        if (len > MAX_FILENAME_LENGTH) {
+            fprintf(stderr,"Warning: Skipping, too long: %s", file);
+            continue;
+        }
+
+        // Create a string if required length.
+
+        if ((out->files[filei] = malloc(sizeof(char) * len)) == NULL) {
+            perror("malloc");
+            exit(ERR_MALLOC);
+        }
+
+        // Copy file path from argument to file->files[filei]
+
+        memcpy(out->files[filei],file,len);    
+    }
+
+    // There are more files than space in out->files[] i.e > MAX_INPUT_FILES
+
+    if (file != NULL && *file != '-')
+        fprintf(stderr, "Warning: Too many files. Skipping after: %s\n",file);
+
+    // Update count
+    out->count = filei;
+
+    return &argv[filei];
+}
