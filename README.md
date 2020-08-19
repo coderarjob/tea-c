@@ -1,4 +1,5 @@
-# Tiny Encryption Algorithm implementation in C
+
+## Tiny Encryption Algorithm implementation in C
 
 The Tiny Encryption Algorithm is one of the fastest and most efficient 
 cryptographic algorithms in existence. It was developed by David Wheeler and 
@@ -6,53 +7,58 @@ Roger Needham at the Computer Laboratory of Cambridge University.
 
 ## Goal
 
-The goal was to learn a crypographic algorithm that is easy to implement both
+The goal was to learn a crypographic algorithm that is easy to implement both 
 on C and in Assembly language.
 
-The TEA algorithm is easy to implement and the `tea` application with it gets
+The TEA algorithm is easy to implement and the `tea` application with it gets 
 compilled into can used to Encrypt and Decrypt files.
 
 ## Implementation
 
-The current implementation reads data from the Standard Input and writes
-entrypted/decrypted output to the Standard Output. The algorithm is contained
-in `tea.c` file and `main.c` deals with testing arguments and calling tea
-routines to entrypt/decrypt entire files.
+It takes as input, names of files that need to be entrypted/decrypted and after
+performing the operation writes the output in separate files.
+
+|Mode | Input | Output |
+|-----------|--------------|-------------|
+|**Encryption** | `any file type` | `.3` files in the same directory`|
+|**Decryption** | files of `.3` extension | files with same name but `.3` 
+extension removed |
+
+The algorithm is contained in `tea.c` file and `main.c` deals with testing 
+arguments and calling tea routines to entrypt/decrypt entire files.
 
 ## Build
 
-Run the `build.sh` file in shell. It will build in the local directory, but
+Run the `build.sh` file in shell. It will build in the local directory, but 
 will not install it anywhere. So no root is required.
 
 ## Usage:
 
 ```
-./tea [-e|-d] '16 byte key'
+tea [-e|-d] -k '16 byte key' -I <input files...>
 -e    - Encrypt
 -d    - Decrypt
+-k    - 16 byte key
+-I    - Input files for decryption/encryption.
 ```
 
 ## Example:
 
 ```
-tea -e 'great elephant i' <password >password.e
+tea -ek 'great elephant i' -I secret1 secret2 secret3
 ```
-This encrypts the file `password` using the key `great elephant i`, and creates
-output in `password.e` file.
+
+This encrypts the files `secret1, secret2, secret3` using the key 
+`great elephant i`, and creates three output files, one for each, with 
+`.3` extension.
+
 
 ```
-tea -d 'great elephant i' <password.e
+tea -dk 'great elephant i' -I password.3
 ```
-This decrypts the file `password.e` using the key `great elephant i`, and
-writes the output in standard output. You could also be redirect the output to
-a file, if you want.
+This decrypts the file `password.3` using the key `great elephant i`, and 
+writes the output to `password` file. 
 
 ## Issues:
-
-```
-tea -e 'great elephant i' <password >password
-```
-
-The input and output file cannnot be the same. IT CLEARS THE WHOLE FILE.
 
 
