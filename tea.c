@@ -11,8 +11,8 @@
  * */
 #include "tea.h"
 #include <unistd.h>        // For read, write, access, close
-#include <fcntl.h>        // For open
-#include <stdio.h>        // For printf and NULL, etc..
+#include <fcntl.h>         // For open
+#include <stdio.h>         // For printf and NULL, etc..
 #include <string.h>        // For memset
 
 void decode(uint32_t *v, uint32_t *k)
@@ -71,7 +71,6 @@ bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
     }
 
     // 2. Open the files
-
     if ((inf = open (in_file, O_RDONLY)) == -1) {
         perror("open - input");
         return false;
@@ -87,15 +86,12 @@ bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
 
     // Read 8 bytes from the file, until EOF is reached or some error
     // occurs.
-
     while ((len = read (inf,d,DATA_SIZE)) > 0){
 
         // Fill rest of the d array with zero.
-
         memset(&d[len], 0, DATA_SIZE - len);    
 
         // Performs Encryption / Decryption operation
-
         if (mode == ENCRYPT)
             code ((uint32_t *) d, (uint32_t *) key);
         else

@@ -14,41 +14,44 @@
  * ---------------------------------------------------------------------------
  * */
 #include <stdio.h>        // For printf and NULL, etc..
-#include <stdint.h>        // For standard int types
-#include <stdlib.h>     // For exit, malloc
-#include <string.h>     // For strcmp, strlen, etc..
+#include <stdint.h>       // For standard int types
+#include <stdlib.h>       // For exit, malloc
+#include <string.h>       // For strcmp, strlen, etc..
+#include <unistd.h>       // For unlink
 #include "tea.h"
 
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
         "Performs Encryption/Decruption of multiple flies.\n" \
-        "usage:\n%s [-e|-d] -k '16 byte key' -I <...>\n" \
+        "usage:\n%s [-e [-D] |-d] -k '16 byte key' -I <...>\n" \
         "-e    - Encrypt\n" \
         "        Encrypts the input files and the output files of each" \
         " will be placed in the same directory with extension .3\n" \
         "-d    - Decrypt\n" \
         "        Decrypts the input files and the output files of each" \
         " will be placed in the same directory excluding extension .3\n" \
+        "-D    - Will delete parent files after encryption\n" \
         "-k    - 16 byte key.\n" \
         "-I    - Files that need to be processed.\n" \
         , p)
 
-#define MAX_FILENAME_LENGTH 255 // Length of file path
-#define MAX_INPUT_FILES 50 // number of files
+#define MAX_FILENAME_LENGTH 255          // Length of file path
+#define MAX_INPUT_FILES 50               // number of files
 #define ENCRYPTED_FILE_EXTENSION ".3"
 
-enum errors { 
-                ERR_NONE, 
-                 ERR_MALLOC, 
-                 ERR_FILE_FAILED, 
-                 ERR_INVALID_ARG
-            };
+#define FLAG_DELETE_AFTER_ENCRYPTION 1
+
+enum errors { ERR_NONE, 
+              ERR_MALLOC, 
+              ERR_FILE_FAILED, 
+              ERR_INVALID_ARG };
 struct op
 {
-    int mode;
-    int count;
+    int  mode;
+    int  count;
     char key[KEY_SIZE];
     char *files[MAX_INPUT_FILES];
+    int  flags;                         /* Encryption or Decryption flags */
 };
 
 int readargs(char *argv[], struct op *out);
@@ -58,13 +61,14 @@ int strip_extension(char *filename, char *extension, char *out);
 
 int main(int argc,char *argv[])
 {
+    int status;
     struct op prm = {0};
 
     // 1. Read parameters
     if (argc >= 4)
-        readargs(argv,&prm);
+        status = readargs(argv,&prm);
 
-    if (prm.mode == UNSET || prm.key[0] == 0)
+    if (status != ERR_NONE || prm.mode == UNSET || prm.key[0] == 0)
     {
         USAGE(argv[0]);
         exit(ERR_INVALID_ARG);
@@ -85,6 +89,16 @@ int main(int argc,char *argv[])
                              prm.files[i], 
                              output_filename, 
                              prm.key);
+
+            // Delete file is -D was provided.
+            if (prm.flags & FLAG_DELETE_AFTER_ENCRYPTION){
+                if (unlink(prm.files[i]) == -1){
+                    fprintf(stderr,
+                            "File %s was encrypted, "
+                            "but could not be deleted.\n", prm.files[i]);
+                    perror("unlink");
+                }
+            }
         }
         else{
             // Output file name: InputFilePath - ".3" extension
@@ -154,6 +168,9 @@ int readargs(char *argv[], struct op *out)
                     case 'I':
                         argv = read_args_files(argv,out);
                         break;
+                    case 'D':
+                        out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
+                        break;
                     default:
                         fprintf(stderr,"Error: Invaid argument: %s\n",arg);
                         return ERR_INVALID_ARG;
@@ -162,7 +179,14 @@ int readargs(char *argv[], struct op *out)
             }
         }
     }
-    return 0;
+
+    if (out->flags & FLAG_DELETE_AFTER_ENCRYPTION && out->mode != ENCRYPT){
+        fprintf(stderr,
+                "Error: Delete option is only for Encryption mode.\n");
+        return ERR_INVALID_ARG;
+    }
+
+    return ERR_NONE;
 }
 
 int read_args_key(char *arg, struct op *out)
@@ -180,7 +204,7 @@ int read_args_key(char *arg, struct op *out)
 char **read_args_files(char *argv[], struct op *out)
 {
     int filei;        // Points to the string in argv being copied.
-    char *file;        // Points to the current string at argv[filei]
+    char *file;       // Points to the current string at argv[filei]
 
     // It will take each of the strings in argv and copy them to out->files[].
     // The loop stops when there are no more strings in argv array or when the
@@ -189,11 +213,8 @@ char **read_args_files(char *argv[], struct op *out)
             ; (file = argv[filei]) && *file != '-' && filei < MAX_INPUT_FILES 
             ; filei++)
     {
-
-
         // Check the length of the file name.
         // Check if filename + EOL < MAX_FILENAME_LENGTH
-
         int len = strlen(file) + 1;
         if (len > MAX_FILENAME_LENGTH) {
             fprintf(stderr,"Warning: Skipping, too long: %s", file);
@@ -201,19 +222,16 @@ char **read_args_files(char *argv[], struct op *out)
         }
 
         // Create a string if required length.
-
         if ((out->files[filei] = malloc(sizeof(char) * len)) == NULL) {
             perror("malloc");
             exit(ERR_MALLOC);
         }
 
         // Copy file path from argument to file->files[filei]
-
         memcpy(out->files[filei],file,len);    
     }
 
     // There are more files than space in out->files[] i.e > MAX_INPUT_FILES
-
     if (file != NULL && *file != '-')
         fprintf(stderr, "Warning: Too many files. Skipping after: %s\n",file);
 
