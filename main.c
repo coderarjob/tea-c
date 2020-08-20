@@ -156,25 +156,25 @@ int readargs(char *argv[], struct op *out)
         if (*arg == '-') {
             while(*++arg){
                 switch(*arg) {
-                    case 'e':
-                        out->mode = ENCRYPT;
-                        break;
-                    case 'd':
-                        out->mode = DECRYPT;
-                        break;
-                    case 'k':
-                        read_args_key(*argv++,out);
-                        break;
-                    case 'I':
-                        argv = read_args_files(argv,out);
-                        break;
-                    case 'D':
-                        out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
-                        break;
-                    default:
-                        fprintf(stderr,"Error: Invaid argument: %s\n",arg);
-                        return ERR_INVALID_ARG;
-                        break;
+                case 'e':
+                    out->mode = ENCRYPT;
+                    break;
+                case 'd':
+                    out->mode = DECRYPT;
+                    break;
+                case 'k':
+                    read_args_key(*argv++,out);
+                    break;
+                case 'I':
+                    argv = read_args_files(argv,out);
+                    break;
+                case 'D':
+                    out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
+                    break;
+                default:
+                    fprintf(stderr,"Error: Invaid argument: %s\n",arg);
+                    return ERR_INVALID_ARG;
+                    break;
                 }
             }
         }
