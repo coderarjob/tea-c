@@ -34,10 +34,11 @@ will not install it anywhere. So no root is required.
 ## Usage:
 
 ```
-tea [-e [-D] |-d] -k '16 byte key' -I <input files...>
+tea [-e [-D] |-d] [-v] -k '16 byte key' -I <input files...>
 -e    - Encrypt.
 -d    - Decrypt.
 -D    - Delete source files after encryption.
+-v    - Verbose output.
 -k    - 16 byte key.
 -I    - Input files for decryption/encryption.
 ```

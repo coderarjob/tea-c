@@ -23,7 +23,7 @@
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
         "Performs Encryption/Decruption of multiple flies.\n" \
-        "usage:\n%s [-e [-D] |-d] -k '16 byte key' -I <...>\n" \
+        "usage:\n%s [-e [-D] |-d] [-v] -k '16 byte key' -I <...>\n" \
         "-e    - Encrypt\n" \
         "        Encrypts the input files and the output files of each" \
         " will be placed in the same directory with extension .3\n" \
@@ -31,6 +31,7 @@
         "        Decrypts the input files and the output files of each" \
         " will be placed in the same directory excluding extension .3\n" \
         "-D    - Will delete parent files after encryption\n" \
+        "-v    - Verbose\n" \
         "-k    - 16 byte key.\n" \
         "-I    - Files that need to be processed.\n" \
         , p)
@@ -40,11 +41,13 @@
 #define ENCRYPTED_FILE_EXTENSION ".3"
 
 #define FLAG_DELETE_AFTER_ENCRYPTION 1
+#define FLAG_VERBOSE                 2
 
 enum errors { ERR_NONE, 
               ERR_MALLOC, 
               ERR_FILE_FAILED, 
               ERR_INVALID_ARG };
+
 struct op
 {
     int  mode;
@@ -55,6 +58,7 @@ struct op
 };
 
 int readargs(char *argv[], struct op *out);
+bool delete(char *filename);
 char **read_args_files(char *argv[], struct op *out);
 int read_args_key(char *arg, struct op *out);
 int strip_extension(char *filename, char *extension, char *out);
@@ -76,6 +80,7 @@ int main(int argc,char *argv[])
 
     // Now we encrypt/decrypt each of the files.
     char output_filename[MAX_FILENAME_LENGTH + 2];
+    int ed_status;
 
     for(int i = 0; i < prm.count; i++) {
 
@@ -84,43 +89,56 @@ int main(int argc,char *argv[])
             output_filename[0] = '\0';
             strcat(output_filename, prm.files[i]);
             strcat(output_filename, ENCRYPTED_FILE_EXTENSION);
-
-            encrypt_decrypt (ENCRYPT, 
-                             prm.files[i], 
-                             output_filename, 
-                             prm.key);
-
-            // Delete file is -D was provided.
-            if (prm.flags & FLAG_DELETE_AFTER_ENCRYPTION){
-                if (unlink(prm.files[i]) == -1){
-                    fprintf(stderr,
-                            "File %s was encrypted, "
-                            "but could not be deleted.\n", prm.files[i]);
-                    perror("unlink");
-                }
-            }
         }
         else{
             // Output file name: InputFilePath - ".3" extension
             if (strip_extension(prm.files[i], 
-                            ENCRYPTED_FILE_EXTENSION,
-                            output_filename) == ERR_INVALID_ARG){
+                        ENCRYPTED_FILE_EXTENSION,
+                        output_filename) == ERR_INVALID_ARG){
                 fprintf(stderr,"Warning: Invalid file extension in %s\n",
                         prm.files[i]);
                 continue;
             }
-            
+        } /* if (mode == ENCRYPT) */
 
-            encrypt_decrypt (DECRYPT, 
-                             prm.files[i], 
-                             output_filename, 
-                             prm.key);
+        ed_status = encrypt_decrypt (prm.mode, 
+                prm.files[i], 
+                output_filename, 
+                prm.key);
+
+        // Feature: verbosity
+        if (prm.flags & FLAG_VERBOSE){
+            printf("%s: %s => %s : %s\n", 
+                    (prm.mode == ENCRYPT) ? "Encryption" : "Decryption",
+                    prm.files[i], 
+                    output_filename,
+                    (ed_status) ? "Success" : "Failed");
         }
-    }
 
+        // Feature: Delete file is -D was provided.
+        // Delete only if Encryption worked
+        if (prm.mode == ENCRYPT && 
+            ed_status == true && 
+            prm.flags & FLAG_DELETE_AFTER_ENCRYPTION) {
+            // Feature: verbosity
+            printf("Deletion: %s : %s\n", prm.files[i],
+                    delete (prm.files[i]) ? "Success": "Failed");
+        }
+    }   /* for */
     return ERR_NONE;
 }
+    
+bool delete(char *filename)
+{
+    if (unlink(filename) == -1){
+        fprintf(stderr,
+                "File %s could not be deleted.\n", filename);
+        perror("unlink");
+        return false;
+    }
 
+    return true;
+}
 
 /*
  * Fills 'out' parameter with the filename with Extension removed.
@@ -156,25 +174,28 @@ int readargs(char *argv[], struct op *out)
         if (*arg == '-') {
             while(*++arg){
                 switch(*arg) {
-                case 'e':
-                    out->mode = ENCRYPT;
-                    break;
-                case 'd':
-                    out->mode = DECRYPT;
-                    break;
-                case 'k':
-                    read_args_key(*argv++,out);
-                    break;
-                case 'I':
-                    argv = read_args_files(argv,out);
-                    break;
-                case 'D':
-                    out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
-                    break;
-                default:
-                    fprintf(stderr,"Error: Invaid argument: %s\n",arg);
-                    return ERR_INVALID_ARG;
-                    break;
+                    case 'e':
+                        out->mode = ENCRYPT;
+                        break;
+                    case 'd':
+                        out->mode = DECRYPT;
+                        break;
+                    case 'k':
+                        read_args_key(*argv++,out);
+                        break;
+                    case 'I':
+                        argv = read_args_files(argv,out);
+                        break;
+                    case 'v':
+                        out->flags |= FLAG_VERBOSE;
+                        break;
+                    case 'D':
+                        out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
+                        break;
+                    default:
+                        fprintf(stderr,"Error: Invaid argument: %s\n",arg);
+                        return ERR_INVALID_ARG;
+                        break;
                 }
             }
         }
