@@ -1,12 +1,14 @@
 ## Not released version: 1.0.3
 
-* **BUG #0001 FIXED**: With -D option, file got deleted, even when Encryption failed.
-  **Resolution:** Checked the result of `encrypt_decrypt` before deletion.
-* **BUG #0002 FIXED**: On read/write error, in `encrypt_decrypt ()` routine, `perror ()` 
-  did not display the error code.
+* **BUG #0001 FIXED**: On read/write error, in `encrypt_decrypt ()` routine, 
+  `perror ()` did not display the error code.
   **Resolution:** `close ()` before `perror ()`.
 
-* Feature: Verbosity complete.
+* **BUG #0002 FIXED**: With -D option, file got deleted, even when Encryption 
+  failed.
+  **Resolution:** Checked the result of `encrypt_decrypt` before deletion.
+
+* **Feature:** Verbosity development complete.
 * Usage changed: -v option.
 
 * Code formatting changes in `main.c` and `tea.c`
