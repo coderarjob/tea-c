@@ -1,4 +1,4 @@
-## Not released version: 1.0.3
+## Release version: 1.0.3
 
 * **BUG #0001 FIXED**: On read/write error, in `encrypt_decrypt ()` routine, 
   `perror ()` did not display the error code.
