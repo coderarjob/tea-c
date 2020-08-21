@@ -20,11 +20,10 @@ void decode(uint32_t *v, uint32_t *k)
     uint32_t v0 = v[0],
              v1 = v[1],
              delta = 0x9e3779b9,
-             n = 32;    // Invariant: Number of bits remaining
-            
-    uint32_t sum = delta * 32;
-    while(n--)
-    {
+             n = 32,    // Invariant: Number of bits remaining
+             sum = delta * 32;
+
+    while(n--) {
         v1 -= ((v0<<4) + k[2]) ^ (v0 + sum) ^ ((v0>>5) + k[3]);
         v0 -= ((v1<<4) + k[0]) ^ (v1 + sum) ^ ((v1>>5) + k[1]);
         sum -= delta;
@@ -38,11 +37,10 @@ void code(uint32_t *v, uint32_t *k)
     uint32_t v0 = v[0],
              v1 = v[1],
              delta = 0x9e3779b9,
-             n = 32;    // Invariant: Number of bits remaining
+             n = 32,    // Invariant: Number of bits remaining
+             sum = 0;
             
-    uint32_t sum = 0;
-    while(n--)
-    {
+    while(n--) {
         sum += delta;
         v0 += ((v1<<4) + k[0]) ^ (v1 + sum) ^ ((v1>>5) + k[1]);
         v1 += ((v0<<4) + k[2]) ^ (v0 + sum) ^ ((v0>>5) + k[3]);
@@ -102,15 +100,20 @@ bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
             break;
     }
 
+    // If write/read fails.
+    if (len < 0){
+        perror("read/write");
+        goto failed_exit;
+    }
+
     // Clean up and exit
     close (inf);
     close (outf);
-
-    // In case of read or write error, we exit and display this error.
-    if (len < 0){
-        perror("read/write");
-        return false;
-    }
-
     return true;
+
+failed_exit:
+    // Clean up and exit
+    close (inf);
+    close (outf);
+    return false;
 }
