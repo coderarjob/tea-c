@@ -49,13 +49,16 @@ void code(uint32_t *v, uint32_t *k)
     v[1] = v1;
 }
 
-bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
+bool encrypt_decrypt(int mode, char *key, int flags, 
+                     char *in_file, char *out_file)
 {
     char d[DATA_SIZE];
     int len, inf, outf;
 
-    // 1. Check if out_file already exists
-    if (access(out_file, F_OK) == 0){
+    outf = (flags & TEA_FLAG_OUTPUT_STDOUT) ? STDOUT_FILENO : 0;
+
+    // 1. Check if out_file already exists (skip is output to stdout)
+    if ( outf == 0 && access(out_file, F_OK) == 0) {
         fprintf(stderr,"Warning: Output file already exists %s\n",
                 out_file);
         return false;
@@ -74,18 +77,21 @@ bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
         return false;
     }
 
-    if ((outf = open (out_file, 
-                      O_CREAT|O_WRONLY,
-                      DEFAULT_FILE_CREATION_MODE)) == -1) {
-        perror("open - output");
-        close(inf);
-        return false;
+    // Feature output to stdout
+
+    if ( outf == 0 ) {
+        if ((outf = open (out_file, 
+                        O_CREAT|O_WRONLY,
+                        DEFAULT_FILE_CREATION_MODE)) == -1) {
+            perror("open - output");
+            close(inf);
+            return false;
+        }
     }
 
     // Read 8 bytes from the file, until EOF is reached or some error
     // occurs.
     while ((len = read (inf,d,DATA_SIZE)) > 0){
-
         // Fill rest of the d array with zero.
         memset(&d[len], 0, DATA_SIZE - len);    
 
@@ -108,12 +114,12 @@ bool encrypt_decrypt(int mode, char *in_file, char *out_file, char *key)
 
     // Clean up and exit
     close (inf);
-    close (outf);
+    if ( outf != STDOUT_FILENO ) close (outf);    // Do not close stdout
     return true;
 
 failed_exit:
     // Clean up and exit
     close (inf);
-    close (outf);
+    if ( outf != STDOUT_FILENO ) close (outf);    // Do not close stdout
     return false;
 }
