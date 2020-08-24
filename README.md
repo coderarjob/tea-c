@@ -19,7 +19,7 @@ It takes as input, names of files that need to be entrypted/decrypted and after
 performing the operation writes the output in separate files.
 
 |Mode | Input | -N option | Output |
-|-----------|--------------|-------------|
+|-----------|--------------|-------------|-------------|
 |**Encryption** | `any file type` | true | _Invalid option_ |
 |**Encryption** | `any file type` | false | files with same name but `.3` extension added |
 |**Decryption** | files of `.3` extension | true | Output in stdout |
