@@ -18,10 +18,12 @@ compilled into can used to Encrypt and Decrypt files.
 It takes as input, names of files that need to be entrypted/decrypted and after
 performing the operation writes the output in separate files.
 
-|Mode | Input | Output |
+|Mode | Input | -N option | Output |
 |-----------|--------------|-------------|
-|**Encryption** | `any file type` | files with same name but `.3` extension added |
-|**Decryption** | files of `.3` extension | files with same name but `.3` extension removed |
+|**Encryption** | `any file type` | true | _Invalid option_ |
+|**Encryption** | `any file type` | false | files with same name but `.3` extension added |
+|**Decryption** | files of `.3` extension | true | Output in stdout |
+|**Decryption** | files of `.3` extension | false | files with same name but `.3` extension removed |
 
 The algorithm is contained in `tea.c` file and `main.c` deals with testing 
 arguments and calling tea routines to entrypt/decrypt entire files.
@@ -34,10 +36,11 @@ will not install it anywhere. So no root is required.
 ## Usage:
 
 ```
-tea [-e [-D] |-d] [-v] -k '16 byte key' -I <input files...>
+tea [-e [-D] |-d [-N] ] [-v] -k '16 byte key' -I <input files...>
 -e    - Encrypt.
 -d    - Decrypt.
 -D    - Delete source files after encryption.
+-N    - Send decryption output to stdout.
 -v    - Verbose output.
 -k    - 16 byte key.
 -I    - Input files for decryption/encryption.
