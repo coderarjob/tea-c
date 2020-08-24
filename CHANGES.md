@@ -1,3 +1,10 @@
+## Release version: 1.1.0
+
+* **Feature:** Output to stdout development complete.
+* Usage changed: -N option.
+
+* Added CHANGES.md file to keep track of the changes in versions.
+
 ## Release version: 1.0.3
 
 * **BUG #0001 FIXED**: On read/write error, in `encrypt_decrypt ()` routine, 
