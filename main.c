@@ -23,14 +23,15 @@
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
         "Performs Encryption/Decruption of multiple flies.\n" \
-        "usage:\n%s [-e [-D] |-d] [-v] -k '16 byte key' -I <...>\n" \
+        "usage:\n%s [-e [-D] |-d [-N] ] [-v] -k '16 byte key' -I <...>\n" \
         "-e    - Encrypt\n" \
         "        Encrypts the input files and the output files of each" \
         " will be placed in the same directory with extension .3\n" \
+        "-D    - Will delete parent files after encryption\n" \
         "-d    - Decrypt\n" \
         "        Decrypts the input files and the output files of each" \
         " will be placed in the same directory excluding extension .3\n" \
-        "-D    - Will delete parent files after encryption\n" \
+        "-N    - When decrypting, display output to stdout.\n" \
         "-v    - Verbose\n" \
         "-k    - 16 byte key.\n" \
         "-I    - Files that need to be processed.\n" \
@@ -40,8 +41,9 @@
 #define MAX_INPUT_FILES 50               // number of files
 #define ENCRYPTED_FILE_EXTENSION ".3"
 
-#define FLAG_DELETE_AFTER_ENCRYPTION 1
-#define FLAG_VERBOSE                 2
+#define FLAG_DELETE_AFTER_ENCRYPTION (1 << 0)
+#define FLAG_VERBOSE                 (1 << 1)
+#define FLAG_OUTPUT_TO_STDOUT        (1 << 2)
 
 enum errors { ERR_NONE, 
               ERR_MALLOC, 
@@ -62,6 +64,7 @@ bool delete(char *filename);
 char **read_args_files(char *argv[], struct op *out);
 int read_args_key(char *arg, struct op *out);
 int strip_extension(char *filename, char *extension, char *out);
+bool args_is_valid(struct op *out);
 
 int main(int argc,char *argv[])
 {
@@ -80,31 +83,47 @@ int main(int argc,char *argv[])
 
     // Now we encrypt/decrypt each of the files.
     char output_filename[MAX_FILENAME_LENGTH + 2];
-    int ed_status;
+    int ed_status,
+        enc_dec_mode = 0;
 
     for(int i = 0; i < prm.count; i++) {
 
+        // -- 1. Perform Encryption and Decryption --
+
+        output_filename[0] = '\0';
+
         if (prm.mode == ENCRYPT) {
             // Output file name: InputfilePath + ".3"
-            output_filename[0] = '\0';
             strcat(output_filename, prm.files[i]);
             strcat(output_filename, ENCRYPTED_FILE_EXTENSION);
         }
         else{
             // Output file name: InputFilePath - ".3" extension
             if (strip_extension(prm.files[i], 
-                        ENCRYPTED_FILE_EXTENSION,
-                        output_filename) == ERR_INVALID_ARG){
+                                ENCRYPTED_FILE_EXTENSION,
+                                output_filename) == ERR_INVALID_ARG){
                 fprintf(stderr,"Warning: Invalid file extension in %s\n",
                         prm.files[i]);
                 continue;
             }
+
+            // Feature: Output to stdout
+            if (prm.flags & FLAG_OUTPUT_TO_STDOUT) {
+                strcpy(output_filename,"(stdout)");
+                enc_dec_mode = TEA_FLAG_OUTPUT_STDOUT;
+                printf("-------------- %u: %s --------------\n", 
+                        i+1, prm.files[i]);
+            }
+
         } /* if (mode == ENCRYPT) */
 
         ed_status = encrypt_decrypt (prm.mode, 
-                prm.files[i], 
-                output_filename, 
-                prm.key);
+                                     prm.key,
+                                     enc_dec_mode,
+                                     prm.files[i], 
+                                     output_filename);
+
+        // -- 2. Display message about the status of the above operation --
 
         // Feature: verbosity
         if (prm.flags & FLAG_VERBOSE){
@@ -114,6 +133,8 @@ int main(int argc,char *argv[])
                     output_filename,
                     (ed_status) ? "Success" : "Failed");
         }
+
+        // -- 3. Delete the file if -D option is set --
 
         // Feature: Delete file is -D was provided.
         // Delete only if Encryption worked
@@ -127,7 +148,7 @@ int main(int argc,char *argv[])
     }   /* for */
     return ERR_NONE;
 }
-    
+
 bool delete(char *filename)
 {
     if (unlink(filename) == -1){
@@ -142,7 +163,6 @@ bool delete(char *filename)
 
 /*
  * Fills 'out' parameter with the filename with Extension removed.
- *
  * */
 int strip_extension(char *filename, char *extension, char *out)
 {
@@ -160,7 +180,6 @@ int strip_extension(char *filename, char *extension, char *out)
 
 /*
  * It will read the startup arguments and fill the 'op' structure.
- *
  * */
 int readargs(char *argv[], struct op *out)
 {
@@ -186,6 +205,9 @@ int readargs(char *argv[], struct op *out)
                     case 'I':
                         argv = read_args_files(argv,out);
                         break;
+                    case 'N':
+                        out->flags |= FLAG_OUTPUT_TO_STDOUT;
+                        break;
                     case 'v':
                         out->flags |= FLAG_VERBOSE;
                         break;
@@ -201,13 +223,32 @@ int readargs(char *argv[], struct op *out)
         }
     }
 
-    if (out->flags & FLAG_DELETE_AFTER_ENCRYPTION && out->mode != ENCRYPT){
+    // Check validity of arguments and return
+    return (args_is_valid (out)) ? ERR_NONE : ERR_INVALID_ARG;
+}
+
+bool args_is_valid(struct op *out)
+{
+    if (out->flags & FLAG_DELETE_AFTER_ENCRYPTION && out->mode == DECRYPT){
         fprintf(stderr,
                 "Error: Delete option is only for Encryption mode.\n");
-        return ERR_INVALID_ARG;
+        return false;
     }
 
-    return ERR_NONE;
+    if (out->flags & FLAG_OUTPUT_TO_STDOUT && out->mode == ENCRYPT){
+        fprintf(stderr,
+                "Error: -N option can only be used in Decrypt mode.\n");
+        return false;
+    }
+
+    if (out->flags & FLAG_OUTPUT_TO_STDOUT && out->flags & FLAG_VERBOSE) {
+        fprintf(stderr,
+                "Warning: -v option has no effect with -N option.\n");
+        
+        // Clear verbose flag
+        out->flags &= ~FLAG_VERBOSE;
+    }
+    return true;
 }
 
 int read_args_key(char *arg, struct op *out)
