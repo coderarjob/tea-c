@@ -1,3 +1,9 @@
+## Release version: 1.1.1
+
+* **Change:** -D now works for both encryption and decryption. Deletes source
+files if operation was successful.
+* **Change:** Usage information changed to mention the above point.
+
 ## Release version: 1.1.0
 
 * **Feature:** Output to stdout development complete.

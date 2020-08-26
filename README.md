@@ -36,14 +36,21 @@ will not install it anywhere. So no root is required.
 ## Usage:
 
 ```
-tea [-e [-D] |-d [-N] ] [-v] -k '16 byte key' -I <input files...>
--e    - Encrypt.
--d    - Decrypt.
--D    - Delete source files after encryption.
--N    - Send decryption output to stdout.
--v    - Verbose output.
+tea [-e |-d [-N] ] [-D] [-v] -k '16 byte key' -I <...>
+-e    - Encrypt
+        Encrypts the input files and the output files of each will be placed in the 
+-d    - Decrypt
+        Decrypts the input files and the output files of each will be placed in the 
+-N    - When decrypting, display output to stdout.
+-D    - Deletes source files after encryption or decryption.
+-v    - Verbose
 -k    - 16 byte key.
--I    - Input files for decryption/encryption.
+-I    - Files that need to be processed.
+
+Notes:
+      - Cannot use -D (Delete file), -N (stdout output) together.
+      - Cannot use -e (encryption), -N (stdout output) together.
+      - When using -N (stdout output), -v (Verbose) is ignored.
 ```
 
 ## Example:

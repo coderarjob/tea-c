@@ -23,25 +23,29 @@
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
         "Performs Encryption/Decruption of multiple flies.\n" \
-        "usage:\n%s [-e [-D] |-d [-N] ] [-v] -k '16 byte key' -I <...>\n" \
+        "usage:\n%s [-e |-d [-N] ] [-D] [-v] -k '16 byte key' -I <...>\n" \
         "-e    - Encrypt\n" \
         "        Encrypts the input files and the output files of each" \
         " will be placed in the same directory with extension .3\n" \
-        "-D    - Will delete parent files after encryption\n" \
         "-d    - Decrypt\n" \
         "        Decrypts the input files and the output files of each" \
         " will be placed in the same directory excluding extension .3\n" \
         "-N    - When decrypting, display output to stdout.\n" \
+        "-D    - Deletes source files after encryption or decryption.\n" \
         "-v    - Verbose\n" \
         "-k    - 16 byte key.\n" \
         "-I    - Files that need to be processed.\n" \
+        "\nNotes:\n"\
+        "      - Cannot use -D (Delete file), -N (stdout output) together.\n" \
+        "      - Cannot use -e (encryption), -N (stdout output) together.\n" \
+        "      - When using -N (stdout output), -v (Verbose) is ignored.\n" \
         , p)
 
 #define MAX_FILENAME_LENGTH 255          // Length of file path
 #define MAX_INPUT_FILES 50               // number of files
 #define ENCRYPTED_FILE_EXTENSION ".3"
 
-#define FLAG_DELETE_AFTER_ENCRYPTION (1 << 0)
+#define FLAG_DELETE_SOURCE_FILE      (1 << 0)
 #define FLAG_VERBOSE                 (1 << 1)
 #define FLAG_OUTPUT_TO_STDOUT        (1 << 2)
 
@@ -90,10 +94,9 @@ int main(int argc,char *argv[])
 
         // -- 1. Perform Encryption and Decryption --
 
-        output_filename[0] = '\0';
-
         if (prm.mode == ENCRYPT) {
             // Output file name: InputfilePath + ".3"
+            output_filename[0] = '\0';
             strcat(output_filename, prm.files[i]);
             strcat(output_filename, ENCRYPTED_FILE_EXTENSION);
         }
@@ -110,7 +113,7 @@ int main(int argc,char *argv[])
             // Feature: Output to stdout
             if (prm.flags & FLAG_OUTPUT_TO_STDOUT) {
                 strcpy(output_filename,"(stdout)");
-                enc_dec_mode = TEA_FLAG_OUTPUT_STDOUT;
+                enc_dec_mode |= TEA_FLAG_OUTPUT_STDOUT;
                 printf("-------------- %u: %s --------------\n", 
                         i+1, prm.files[i]);
             }
@@ -137,10 +140,8 @@ int main(int argc,char *argv[])
         // -- 3. Delete the file if -D option is set --
 
         // Feature: Delete file is -D was provided.
-        // Delete only if Encryption worked
-        if (prm.mode == ENCRYPT && 
-            ed_status == true && 
-            prm.flags & FLAG_DELETE_AFTER_ENCRYPTION) {
+        if (ed_status == true && 
+            prm.flags & FLAG_DELETE_SOURCE_FILE) {
             // Feature: verbosity
             printf("Deletion: %s : %s\n", prm.files[i],
                     delete (prm.files[i]) ? "Success": "Failed");
@@ -212,7 +213,7 @@ int readargs(char *argv[], struct op *out)
                         out->flags |= FLAG_VERBOSE;
                         break;
                     case 'D':
-                        out->flags |= FLAG_DELETE_AFTER_ENCRYPTION;
+                        out->flags |= FLAG_DELETE_SOURCE_FILE;
                         break;
                     default:
                         fprintf(stderr,"Error: Invaid argument: %s\n",arg);
@@ -229,11 +230,6 @@ int readargs(char *argv[], struct op *out)
 
 bool args_is_valid(struct op *out)
 {
-    if (out->flags & FLAG_DELETE_AFTER_ENCRYPTION && out->mode == DECRYPT){
-        fprintf(stderr,
-                "Error: Delete option is only for Encryption mode.\n");
-        return false;
-    }
 
     if (out->flags & FLAG_OUTPUT_TO_STDOUT && out->mode == ENCRYPT){
         fprintf(stderr,
@@ -241,9 +237,18 @@ bool args_is_valid(struct op *out)
         return false;
     }
 
+    if (out->flags & FLAG_OUTPUT_TO_STDOUT && 
+            out->flags & FLAG_DELETE_SOURCE_FILE) {
+        fprintf(stderr,
+                "Warning: -D is ignored when outputing to stdout.\n");
+       
+        // Remove -D flag
+        out->flags &= ~FLAG_DELETE_SOURCE_FILE;
+    }
+
     if (out->flags & FLAG_OUTPUT_TO_STDOUT && out->flags & FLAG_VERBOSE) {
         fprintf(stderr,
-                "Warning: -v option has no effect with -N option.\n");
+                "Warning: -v is ignored when outputing to stdout.\n");
         
         // Clear verbose flag
         out->flags &= ~FLAG_VERBOSE;
