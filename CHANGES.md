@@ -1,3 +1,8 @@
+## Release version: 1.1.2
+* Runs in Microsoft Windows. In Windows, build using build.bat
+* BUG: Files encrypted in Linux is not getting decrypted properly in Windows
+  and vice versa.
+
 ## Release version: 1.1.1
 
 * **Change:** -D now works for both encryption and decryption. Deletes source

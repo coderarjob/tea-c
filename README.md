@@ -30,7 +30,12 @@ arguments and calling tea routines to entrypt/decrypt entire files.
 
 ## Build
 
-Run the `build.sh` file in shell. It will build in the local directory, but 
+Run the 
+
+* `build.sh`  (Linux) file in shell. 
+* `build.bat` (Windows)
+
+It will build in the local directory, but 
 will not install it anywhere. So no root is required.
 
 ## Usage:
