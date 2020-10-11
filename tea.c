@@ -10,10 +10,10 @@
  * ---------------------------------------------------------------------------
  * */
 #include "tea.h"
-#include <unistd.h>        // For read, write, access, close
-#include <fcntl.h>         // For open
-#include <stdio.h>         // For printf and NULL, etc..
-#include <string.h>        // For memset
+#include "headers/unistd.h"        // For read, write, access, close
+#include "headers/fcntl.h"         // For open
+#include <stdio.h>                 // For printf and NULL, etc..
+#include <string.h>                // For memset
 
 void decode(uint32_t *v, uint32_t *k)
 {
@@ -78,7 +78,6 @@ bool encrypt_decrypt(int mode, char *key, int flags,
     }
 
     // Feature output to stdout
-
     if ( outf == 0 ) {
         if ((outf = open (out_file, 
                         O_CREAT|O_WRONLY,

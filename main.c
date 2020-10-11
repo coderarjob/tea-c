@@ -13,12 +13,13 @@
  *    Dated : 16th August 2020
  * ---------------------------------------------------------------------------
  * */
-#include <stdio.h>        // For printf and NULL, etc..
-#include <stdint.h>       // For standard int types
-#include <stdlib.h>       // For exit, malloc
-#include <string.h>       // For strcmp, strlen, etc..
-#include <unistd.h>       // For unlink
+
 #include "tea.h"
+#include "headers/stdint.h"       // For standard int types.
+#include "headers/unistd.h"       // For unlink
+#include <stdio.h>        		  // For printf and NULL, etc..
+#include <stdlib.h>       	 	  // For exit, malloc
+#include <string.h>       		  // For strcmp, strlen, etc..
 
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
@@ -74,6 +75,10 @@ int main(int argc,char *argv[])
 {
     int status;
     struct op prm = {0};
+    char output_filename[MAX_FILENAME_LENGTH + 2];
+    int ed_status,
+        enc_dec_mode = 0,
+		i;
 
     // 1. Read parameters
     if (argc >= 4)
@@ -86,14 +91,9 @@ int main(int argc,char *argv[])
     }
 
     // Now we encrypt/decrypt each of the files.
-    char output_filename[MAX_FILENAME_LENGTH + 2];
-    int ed_status,
-        enc_dec_mode = 0;
-
-    for(int i = 0; i < prm.count; i++) {
+    for(i = 0; i < prm.count; i++) {
 
         // -- 1. Perform Encryption and Decryption --
-
         if (prm.mode == ENCRYPT) {
             // Output file name: InputfilePath + ".3"
             output_filename[0] = '\0';

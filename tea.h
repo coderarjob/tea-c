@@ -12,11 +12,10 @@
 #ifndef __TEA__
 #define __TEA__
 
-    #include <stdint.h>    // For standard int types
-    #include <stdbool.h>    // for bool, true, false
+	#include "headers/stdint.h"    // For standard int types
+	#include "headers/stdbool.h"    // for bool, true, false
 
     // Cannot be changed, without impact to the code.
-    
     #define KEY_SIZE 16     // bytes
     #define DATA_SIZE 8        // bytes
 
