@@ -95,6 +95,7 @@ bool encrypt_decrypt(int mode, char *key, int flags,
         memset(&d[len], 0, DATA_SIZE - len);    
 
         // Performs Encryption / Decryption operation
+        printf("%.*s\n%.*s\n",DATA_SIZE,d,KEY_SIZE,key);
         if (mode == ENCRYPT)
             code ((uint32_t *) d, (uint32_t *) key);
         else
