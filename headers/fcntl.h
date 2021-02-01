@@ -23,7 +23,12 @@
     #define O_CREAT  _O_CREAT
     #define O_WRONLY _O_WRONLY
 #else
-	#include <fcntl.h>  // open
+	#include <fcntl.h>      // open
+
+    // In linux _O_BINARY is not used.  In Windows, this is needed to prevent
+    // _write, _read to interpret CTRL+Z as EOL.
+    // https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/write?view=msvc-160
+    #define _O_BINARY 0     
 #endif
 
 #endif

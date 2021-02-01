@@ -72,7 +72,7 @@ bool encrypt_decrypt(int mode, char *key, int flags,
     }
 
     // 2. Open the files
-    if ((inf = open (in_file, O_RDONLY)) == -1) {
+    if ((inf = open (in_file, O_RDONLY|_O_BINARY)) == -1) {
         perror("open - input");
         return false;
     }
@@ -80,7 +80,7 @@ bool encrypt_decrypt(int mode, char *key, int flags,
     // Feature output to stdout
     if ( outf == 0 ) {
         if ((outf = open (out_file, 
-                        O_CREAT|O_WRONLY,
+                        O_CREAT|O_WRONLY|_O_BINARY,
                         DEFAULT_FILE_CREATION_MODE)) == -1) {
             perror("open - output");
             close(inf);
@@ -95,15 +95,16 @@ bool encrypt_decrypt(int mode, char *key, int flags,
         memset(&d[len], 0, DATA_SIZE - len);    
 
         // Performs Encryption / Decryption operation
-        printf("%.*s\n%.*s\n",DATA_SIZE,d,KEY_SIZE,key);
         if (mode == ENCRYPT)
             code ((uint32_t *) d, (uint32_t *) key);
         else
             decode ((uint32_t *) d, (uint32_t *) key);
 
         // Write back
-        if ((len = write (outf,d,DATA_SIZE)) < 0)
+        if ((len = write (outf,d,DATA_SIZE)) < 0){
+            perror("write");
             break;
+        }
     }
 
     // If write/read fails.
