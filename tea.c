@@ -99,6 +99,8 @@ bool encrypt_decrypt(int mode, char *key, int flags,
             code ((uint32_t *) d, (uint32_t *) key);
         else
             decode ((uint32_t *) d, (uint32_t *) key);
+        
+        printf("\n%d %d\n",d[0],d[1]);
 
         // Write back
         if ((len = write (outf,d,DATA_SIZE)) < 0){
