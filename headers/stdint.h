@@ -11,7 +11,7 @@
 /* stdint */
 #ifdef __WINDOWS
 	// https://docs.microsoft.com/en-us/cpp/cpp/data-type-ranges?view=vs-2019
-	typedef __int32 uint32_t;
+	typedef unsigned __int32 uint32_t;
 #else
 	#include <stdint.h>    // For standard int types
 #endif
