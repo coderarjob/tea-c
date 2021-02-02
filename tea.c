@@ -100,7 +100,7 @@ bool encrypt_decrypt(int mode, char *key, int flags,
         else
             decode ((uint32_t *) d, (uint32_t *) key);
         
-        printf("\n%d %d\n",d[0],d[1]);
+        printf("\n%u %u\n",d[0],d[1]);
 
         // Write back
         if ((len = write (outf,d,DATA_SIZE)) < 0){
