@@ -1,3 +1,11 @@
+## Release version: 2.0.0
+*  **BUG FIX**: Linux incompatability resolved. 
+`typedef _int32 uint32_t` should be `typedef unsigend _int32 uint32_t`.
+* Breaks backward-file compatability in Windows.
+
+## Release version: 1.1.3
+* **BUG FIX**: `_O_BINARY` flag is needed to prevent `_write` and `_read` to 
+interpret CTRL+Z and end of file.
 ## Release version: 1.1.2
 * Runs in Microsoft Windows. In Windows, build using build.bat
 * BUG: Files encrypted in Linux is not getting decrypted properly in Windows
