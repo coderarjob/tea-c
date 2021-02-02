@@ -1,3 +1,7 @@
+## Release version: 2.0.1
+* All header files are inside the headers folder.
+* Binary for linux is built inside the bin/linux folder.
+
 ## Release version: 2.0.0
 *  **BUG FIX**: Linux incompatability resolved. 
 `typedef _int32 uint32_t` should be `typedef unsigend _int32 uint32_t`.
