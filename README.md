@@ -41,27 +41,38 @@ will not install it anywhere. So no root is required.
 ## Usage:
 
 ```
-tea [-e |-d [-N] ] [-D] [-v] -k '16 byte key' -I <...>
+tea [-e |-d [-N] ] [-D] [-v] [-k '16 byte key'|-K] -I <...>
 -e    - Encrypt
-        Encrypts the input files and the output files of each will be placed in the 
+        Encrypts the input files and the output files of each will be placed in the same directory with extension .3
 -d    - Decrypt
-        Decrypts the input files and the output files of each will be placed in the 
+        Decrypts the input files and the output files of each will be placed in the same directory excluding extension .3
 -N    - When decrypting, display output to stdout.
 -D    - Deletes source files after encryption or decryption.
 -v    - Verbose
--k    - 16 byte key.
+-k    - 16 byte key (as argument).
+-K    - 16 byte key (from stdin).
 -I    - Files that need to be processed.
 
 Notes:
       - Cannot use -D (Delete file), -N (stdout output) together.
       - Cannot use -e (encryption), -N (stdout output) together.
       - When using -N (stdout output), -v (Verbose) is ignored.
+
 ```
 
 ## Example:
 
 ```
-tea -ek 'great elephant i' -I secret1 secret2 secret3
+$ tea -ek 'great elephant i' -I secret1 secret2 secret3
+```
+
+**or**
+
+
+```
+# With the new -K option
+$ tea -eK -I secret1 secret2 secret3
+Enter key (16 characters): great elephant i
 ```
 
 This encrypts the files `secret1, secret2, secret3` using the key 
@@ -70,9 +81,17 @@ This encrypts the files `secret1, secret2, secret3` using the key
 
 
 ```
-tea -dk 'great elephant i' -I password.3
+$ tea -dk 'great elephant i' -I password.3
 ```
+
+**or**
+
+```
+# With the new -K option
+$ tea -dK -I password.3
+Enter key (16 characters): great elephant i
+```
+
 This decrypts the file `password.3` using the key `great elephant i`, and 
 writes the output to `password` file. 
-
 

@@ -24,7 +24,7 @@
 #define USAGE(p) fprintf(stderr, \
         "Tiny Encryption Algorithm implementation, with 128 bit key.\n" \
         "Performs Encryption/Decruption of multiple flies.\n" \
-        "usage:\n%s [-e |-d [-N] ] [-D] [-v] -k '16 byte key' -I <...>\n" \
+        "usage:\n%s [-e |-d [-N] ] [-D] [-v] [-k '16 byte key'|-K] -I <...>\n" \
         "-e    - Encrypt\n" \
         "        Encrypts the input files and the output files of each" \
         " will be placed in the same directory with extension .3\n" \
