@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------------
  * */
 
-#include "tea.h"
+#include "headers/tea.h"
 #include "headers/stdint.h"       // For standard int types.
 #include "headers/unistd.h"       // For unlink
 #include <stdio.h>        		  // For printf and NULL, etc..
