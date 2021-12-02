@@ -34,7 +34,8 @@
         "-N    - When decrypting, display output to stdout.\n" \
         "-D    - Deletes source files after encryption or decryption.\n" \
         "-v    - Verbose\n" \
-        "-k    - 16 byte key.\n" \
+        "-k    - 16 byte key (as argument).\n" \
+        "-K    - 16 byte key (from stdin).\n" \
         "-I    - Files that need to be processed.\n" \
         "\nNotes:\n"\
         "      - Cannot use -D (Delete file), -N (stdout output) together.\n" \
@@ -67,7 +68,7 @@ struct op
 int readargs(char *argv[], struct op *out);
 bool delete(char *filename);
 char **read_args_files(char *argv[], struct op *out);
-int read_args_key(char *arg, struct op *out);
+int read_args_key(char *arg, struct op *out, bool fromstdin);
 int strip_extension(char *filename, char *extension, char *out);
 bool args_is_valid(struct op *out);
 
@@ -182,6 +183,8 @@ int strip_extension(char *filename, char *extension, char *out)
 /*
  * It will read the startup arguments and fill the 'op' structure.
  * */
+#define KEY_FROM_ARGS  false
+#define KEY_FROM_STDIN true
 int readargs(char *argv[], struct op *out)
 {
     char *arg;
@@ -201,7 +204,10 @@ int readargs(char *argv[], struct op *out)
                         out->mode = DECRYPT;
                         break;
                     case 'k':
-                        read_args_key(*argv++,out);
+                        read_args_key(*argv++,out,KEY_FROM_ARGS);
+                        break;
+                    case 'K':
+                        read_args_key(NULL,out,KEY_FROM_STDIN);
                         break;
                     case 'I':
                         argv = read_args_files(argv,out);
@@ -256,15 +262,31 @@ bool args_is_valid(struct op *out)
     return true;
 }
 
-int read_args_key(char *arg, struct op *out)
+int read_args_key(char *arg, struct op *out, bool fromstdin)
 {
-    if (strlen(arg) != KEY_SIZE){
+    char *key = arg;
+
+    if (fromstdin){
+        /* Ask for the key and read from stdin */
+
+        // +1 because length argument must include the EOL character.
+        char inkey[KEY_SIZE + 1];
+        key = inkey;
+
+        printf("Enter key (%d characters): ", KEY_SIZE);
+        if (fgets(key, sizeof(inkey), stdin) == NULL){
+            perror("fgets");
+            return ERR_INVALID_ARG;
+        }
+    }
+
+    if (strlen(key) != KEY_SIZE){
         fprintf(stderr,
                 "Error: Invalid key. Must be %u bytes long.\n", KEY_SIZE);
         return ERR_INVALID_ARG;
     }
 
-    memcpy(out->key,arg,KEY_SIZE);    
+    memcpy(out->key,key,KEY_SIZE);
     return 0;
 }
 

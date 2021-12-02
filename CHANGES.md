@@ -1,3 +1,8 @@
+## Release version: 2.1.0
+* **Feature:** -K (capital k), reads key from the stdin. This way your key will
+  not get saved to the terminal history. The old option is still present and 
+  is backwards compatable with old .3 files.
+
 ## Release version: 2.0.1
 * All header files are inside the headers folder.
 * Binary for linux is built inside the bin/linux folder.
